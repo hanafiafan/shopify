@@ -23,3 +23,6 @@ cookies.txt
 
 # --- sdd controller scratch ---
 .superpowers/
+
+# task scratch logs
+app-editions/.superpowers-*.log
