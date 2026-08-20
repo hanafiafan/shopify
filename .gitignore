@@ -1,0 +1,25 @@
+# --- dependencies / build ---
+node_modules/
+app-editions/node_modules/
+app-editions/.next/
+app-editions/out/
+
+# --- large re-fetched assets: reproducible via scripts/fetch-assets.mjs ---
+app-editions/public/assets/
+
+# --- HTTrack scrape source: large + copyrighted, keep out of history ---
+www.shopify.com/
+cdn.shopify.com/
+embed-ssl.wistia.com/
+www.gstatic.com/
+hts-cache/
+backblue.gif
+fade.gif
+index.html
+hts-log.txt
+
+# --- SECRET: session cookies from the scrape, never commit ---
+cookies.txt
+
+# --- sdd controller scratch ---
+.superpowers/
