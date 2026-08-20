@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import RevealStatic from './RevealStatic';
 
 // ponytail: inject the rewritten SSR body (assets localized, Shopify->Hellens, scripts stripped).
 // Pixel-faithful to the original; Shopify's compiled CSS is loaded globally in globals.css.
@@ -10,5 +11,10 @@ const html = readFileSync(
 );
 
 export default function WinterTwentySixPage() {
-  return <div dangerouslySetInnerHTML={{ __html: html }} />;
+  return (
+    <>
+      <div data-injected-edition dangerouslySetInnerHTML={{ __html: html }} />
+      <RevealStatic />
+    </>
+  );
 }
