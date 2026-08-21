@@ -26,6 +26,12 @@ html = html.replace(/<!--\s*Mirrored from[\s\S]*?-->/gi, '');
 // 1) single origin: every relative ../…/cdn.shopify.com/… -> https://cdn.shopify.com/…
 html = html.replace(/(?:\.\.\/)+cdn\.shopify\.com\//g, 'https://cdn.shopify.com/');
 
+// derive the (rebranded) page title from the original <title> so each edition is correct
+const rawTitle = (html.match(/<title>([^<]*)<\/title>/i)?.[1] || 'Hellens Editions')
+  .replace(/&#x27;|&#39;/g, "'").replace(/&amp;/g, '&')
+  .replace(/Shopify\.com/g, 'hellens.dev').replace(/Shopify(?!\.(?:com|dev))/g, 'Hellens');
+const titleJs = JSON.stringify(rawTitle);
+
 // 2) rebrand AFTER hydration, client-side, so SSR/CSR match during hydration.
 const HELLENS_MARK =
   "s.setAttribute('viewBox','0 0 747.14 513.71');" +
@@ -33,7 +39,7 @@ const HELLENS_MARK =
 const rebrand = `<script>(function(){
 function walk(){var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null);var n;while(n=w.nextNode()){var v=n.nodeValue;if(v&&v.indexOf('Shopify')>-1){n.nodeValue=v.replace(/Shopify\\.com/g,'hellens.dev').replace(/Shopify/g,'Hellens');}}}
 function logo(){document.querySelectorAll('svg[viewBox="0 0 18 19"]').forEach(function(s){${HELLENS_MARK}});}
-function go(){try{walk();logo();document.title="Hellens Editions | Winter '26";}catch(e){}}
+function go(){try{walk();logo();document.title=${titleJs};}catch(e){}}
 window.addEventListener('load',function(){go();var n=0,id=setInterval(function(){go();if(++n>12)clearInterval(id);},250);});
 })();</script>`;
 html = html.replace('</body>', rebrand + '</body>');
