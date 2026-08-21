@@ -20,7 +20,7 @@ internet needed to view (8/9 editions make **zero** external requests; see limit
 
 ```bash
 npm install
-npm run dev        # http://localhost:3000  ( / redirects to /editions/winter2026 )
+npm run dev        # http://localhost:3000  ( / is the Editions landing; cards link to each edition )
 ```
 
 ## Rebuilding the local mirror
