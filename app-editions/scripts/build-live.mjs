@@ -23,14 +23,34 @@ let html = await readFile(join(SCRAPE_ROOT, 'www.shopify.com', 'editions', `${ba
 // strip HTTrack's injected mirror comment
 html = html.replace(/<!--\s*Mirrored from[\s\S]*?-->/gi, '');
 
-// 1) single origin: every relative ../…/cdn.shopify.com/… -> https://cdn.shopify.com/…
-html = html.replace(/(?:\.\.\/)+cdn\.shopify\.com\//g, 'https://cdn.shopify.com/');
+// 1) single LOCAL origin (fully offline): every cdn/myshopify/wistia ref -> local root-relative,
+//    so all modules + assets load from one localhost origin served out of public/ (no external CDN,
+//    no dual-React). offline.mjs mirrors these hosts into public/ and localizes the JS/CSS.
+html = html
+  .replace(/(?:\.\.\/)+cdn\.shopify\.com\//g, '/cdn.shopify.com/')
+  .replace(/https:\/\/cdn\.shopify\.com\//g, '/cdn.shopify.com/')
+  .replace(/https:\/\/([a-z0-9-]+\.myshopify\.com)\//g, '/$1/')
+  .replace(/https:\/\/(embed-ssl\.wistia\.com|fast\.wistia\.com|fast\.wistia\.net)\//g, '/$1/');
 
 // derive the (rebranded) page title from the original <title> so each edition is correct
 const rawTitle = (html.match(/<title>([^<]*)<\/title>/i)?.[1] || 'Hellens Editions')
   .replace(/&#x27;|&#39;/g, "'").replace(/&amp;/g, '&')
   .replace(/Shopify\.com/g, 'hellens.dev').replace(/Shopify(?!\.(?:com|dev))/g, 'Hellens');
 const titleJs = JSON.stringify(rawTitle);
+
+// 1b) network guard: the bundle injects GTM/Google/DoubleClick analytics + a Shopify consent
+//     beacon dynamically (no script tag in the HTML to remove). This runs first in <head> and
+//     blocks every request to a non-local host, so the page makes ZERO external calls.
+const guard = `<script>(function(){var loc=location;function ext(u){try{if(!u)return false;if(/^(data:|blob:|#|javascript:)/i.test(u))return false;return new URL(u,loc.href).host!==loc.host;}catch(e){return false;}}
+var of=window.fetch;if(of)window.fetch=function(i){var u=typeof i==='string'?i:(i&&i.url);if(ext(u))return Promise.resolve(new Response(null,{status:204}));return of.apply(this,arguments);};
+var xo=XMLHttpRequest.prototype.open;XMLHttpRequest.prototype.open=function(m,u){this.__b=ext(u);return xo.apply(this,arguments);};
+var xsnd=XMLHttpRequest.prototype.send;XMLHttpRequest.prototype.send=function(){if(this.__b)return;return xsnd.apply(this,arguments);};
+if(navigator.sendBeacon)navigator.sendBeacon=function(u){return !ext(u);};
+['appendChild','insertBefore'].forEach(function(fn){var o=Node.prototype[fn];Node.prototype[fn]=function(n){try{if(n&&n.tagName&&/^(script|img|iframe|link)$/i.test(n.tagName)){var s=n.src||(n.getAttribute&&n.getAttribute('src'))||n.href;if(ext(s))return n;}}catch(e){}return o.apply(this,arguments);};});
+try{var id=Object.getOwnPropertyDescriptor(HTMLImageElement.prototype,'src');Object.defineProperty(HTMLImageElement.prototype,'src',{set:function(v){if(!ext(v))id.set.call(this,v);},get:function(){return id.get.call(this);}});}catch(e){}
+var sa=Element.prototype.setAttribute;Element.prototype.setAttribute=function(k,v){try{if(/^(src|href|srcset)$/i.test(k)&&ext(String(v).split(/[ ,]/)[0]))return;}catch(e){}return sa.apply(this,arguments);};
+window.dataLayer=window.dataLayer||[];window.gtag=window.gtag||function(){};})();</script>`;
+html = html.replace(/<head[^>]*>/i, (m) => m + guard);
 
 // 2) rebrand AFTER hydration, client-side, so SSR/CSR match during hydration.
 const HELLENS_MARK =
@@ -47,5 +67,5 @@ html = html.replace('</body>', rebrand + '</body>');
 await mkdir(join('public', 'live'), { recursive: true });
 await writeFile(join('public', 'live', `${out}.html`), html);
 
-const rel = (html.match(/(?:\.\.\/)+cdn\.shopify\.com\//g) || []).length;
-console.log(`live/${out}.html (${(html.length/1024|0)}KB): relative cdn refs left: ${rel} (must be 0 for single origin)`);
+const external = (html.match(/(?:src|href|content)="https:\/\/(?:cdn\.shopify\.com|[a-z0-9-]+\.myshopify\.com|embed-ssl\.wistia\.com)\//g) || []).length;
+console.log(`live/${out}.html (${(html.length/1024|0)}KB): external asset-host refs left: ${external} (0 = fully local)`);

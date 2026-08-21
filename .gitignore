@@ -26,3 +26,8 @@ cookies.txt
 
 # task scratch logs
 app-editions/.superpowers-*.log
+
+# local offline mirror under app-editions/public (huge; reproducible via scripts/offline.mjs)
+app-editions/public/*.myshopify.com/
+app-editions/public/fast.wistia.com/
+app-editions/public/fast.wistia.net/
