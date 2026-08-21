@@ -1,36 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Hellens Editions
 
-## Getting Started
+A rebrand of the Shopify Editions marketing pages to **Hellens** (hellens.dev),
+served as **live standalone clones** through Next.js. Learning/portfolio project — not
+affiliated with Shopify.
 
-First, run the development server:
+## What this is
+
+The pages are Shopify's original Remix bundles (scraped with HTTrack), rebranded to Hellens
+and served by Next.js as static HTML. The real WebGL / Theatre.js / scroll animations run
+live in the browser. Next.js is the **host** here (via `next.config.ts` rewrites) — it does not
+React-render these pages, because Shopify's Remix hydrates the whole document and two React
+roots can't share one DOM.
+
+## Run
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev        # http://localhost:3000  ( / redirects to /editions/winter2026 )
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Assets (heavy webp/video) stream from Shopify's live CDN, so an internet connection is needed.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Editions
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Route | Status |
+|---|---|
+| `/editions/winter2026` | ✅ live (Renaissance) |
+| `/editions/spring2026` | ✅ live |
+| `/editions/summer2025` | ✅ live |
+| `/editions/summer2024` | ✅ live |
+| `/editions/winter2024` | ✅ live |
+| `/editions/summer2023` | ✅ live |
+| `/editions/winter2023` | ✅ live (static, no WebGL) |
+| `/editions/summer2022` | ✅ live |
+| `/editions/winter2025` | ⛔ broken — a route/scene chunk 404s on Shopify's CDN (dead upstream) |
 
-## Learn More
+## How a page is built
 
-To learn more about Next.js, take a look at the following resources:
+`scripts/build-live.mjs <html-basename> <out-basename>` takes a scraped edition HTML and:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. **Normalizes every `cdn.shopify.com` ref to a single origin** (the real CDN). Mixing the
+   scrape's relative + absolute refs loaded two React copies → `useContext` null → "Application
+   Error". One origin = one module graph.
+2. Serves it at the **original pathname** (`/editions/<name>`) so Remix's client router matches
+   its route manifest.
+3. **Rebrands after hydration** — an injected script walks the DOM (Shopify→Hellens text,
+   `Shopify.com`→`hellens.dev`), swaps the bag-glyph logo for the Hellens mark, and sets the
+   title. Doing this post-hydration keeps SSR/CSR identical so hydration doesn't mismatch.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Rebuild all editions: run `build-live.mjs` per edition (see the `EDITIONS` list in
+`next.config.ts`), then restart `next dev`.
 
-## Deploy on Vercel
+## Verify
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+`scripts/check.mjs <url>` drives headless Edge (via `puppeteer-core`) and reports title,
+scroll height, hydration state, WebGL canvas count, and console errors — used to confirm each
+edition renders. Requires Edge running with `--remote-debugging-port=9222`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Known, accepted limitations
+
+- **winter2025** is broken upstream (a chunk is gone from Shopify's CDN). Not fixable here.
+- Benign React hydration warnings (#418/#425) surface on some editions — inherent to cloning a
+  third-party bundle; content still renders.
+- `scripts/fetch-assets.mjs` / `localize-css.mjs` / `extract-page.mjs`, `app/vendor/*`, and the
+  `public/assets` download (~4.4 GB, git-ignored) are from an earlier **offline** approach that
+  the live-standalone pivot superseded. Kept as the offline fallback; safe to delete
+  `public/assets/` to reclaim disk.
