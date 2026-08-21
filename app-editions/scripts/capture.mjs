@@ -16,6 +16,7 @@ const browser = await puppeteer.connect({
   defaultViewport: { width: 1440, height: 900 },
 });
 const page = await browser.newPage();
+if (process.env.OFFLINE === '1') { await page.setOfflineMode(true); console.log('*** browser network DISABLED (offline mode) ***'); }
 const errors = [], failed = [];
 page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text().slice(0, 200)); });
 page.on('pageerror', (e) => errors.push('PAGEERR: ' + e.message.slice(0, 200)));
