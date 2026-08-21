@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
     return [
       // Live standalone clone: serve the rebranded Shopify HTML bundle (Remix hydrates,
       // real scroll/WebGL animations run). Next hosts it as a static file.
-      { source: "/editions/winter-2026", destination: "/live/winter-2026.html" },
+      { source: "/editions/winter2026", destination: "/live/winter2026.html" },
     ];
   },
 };
