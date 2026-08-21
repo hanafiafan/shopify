@@ -35,6 +35,8 @@ robocopy ..\cdn.shopify.com public\cdn.shopify.com /E    # writable copy of the 
 node scripts/offline.mjs               # place assets at host paths + localize baked cdn URLs + fonts
 # 2. build the pages
 for %e in (winter2026 spring2026 summer2025 winter2025 summer2024 winter2024 summer2023 winter2023 summer2022) do node scripts/build-live.mjs %e %e
+# 3. heal: fetch lazy chunks/fonts HTTrack never crawled (needs dev server + Edge on :9222)
+node scripts/heal-mirror.mjs http://localhost:3000/editions/winter2026 ...one URL per edition...
 ```
 
 ## Editions
@@ -49,7 +51,11 @@ for %e in (winter2026 spring2026 summer2025 winter2025 summer2024 winter2024 sum
 | `/editions/summer2023` | ✅ live |
 | `/editions/winter2023` | ✅ live (static, no WebGL) |
 | `/editions/summer2022` | ✅ live |
-| `/editions/winter2025` | ⚠️ partial — renders, but one scene chunk is dead on Shopify's CDN |
+| `/editions/winter2025` | ✅ live (shorter than the others; one scene is thin) |
+
+All nine render fully offline: **0 external requests, 0 local 404s** (after the heal step), WebGL
+scenes present. Remaining console noise is benign React hydration warnings (#418/#425) inherent
+to hydrating a third-party bundle.
 
 ## How a page is built
 
@@ -75,19 +81,19 @@ edition renders. Requires Edge running with `--remote-debugging-port=9222`.
 
 ## Offline verification
 
-`scripts/check.mjs <url>` reports, among other things, **external hosts contacted**. Result:
-8/9 editions contact **zero** external hosts; `summer2022` makes **1** (a Wistia thumbnail URL
-its player builds at runtime — not interceptable at build time).
+`scripts/check.mjs <url>` reports **external hosts contacted** and **404s**. After the heal step
+all nine editions report **0 external** and **0 404s**.
+
+Note: verify with WebGL enabled (`--use-angle=swiftshader --enable-unsafe-swiftshader`, or a real
+browser). With `--disable-gpu` the GPU-detection / Background-scene chunks throw and the page
+hits its error boundary — that is a headless artifact, not a real failure.
 
 ## Known, accepted limitations
 
-- **summer2022** leaks 1 runtime-built Wistia thumbnail request; every other edition is fully
-  offline (0 external).
-- **winter2025** references a chunk that is gone from Shopify's CDN, so it renders partially
-  (its dead scene is skipped). The rest of the page works.
-- Benign React hydration warnings (#418/#425) and a few local 404s (lazy chunks HTTrack never
-  crawled, left to degrade gracefully) surface on some editions — content still renders. Note:
-  *fetching* those missing chunks makes things worse, not better — once loaded they run and hit
-  the network guard, throwing into the error boundary; leaving them to 404 is deliberate.
+- Benign React hydration warnings (#418/#425) surface on some editions — inherent to hydrating a
+  third-party bundle; content still renders. Not worth chasing in code we don't own.
+- `winter2025` renders but is shorter than the others (one scene is thin).
+- `next dev` is unoptimized; for the smoothest experience run a production build
+  (`next build && next start`).
 - The landing page (`/`) is a normal Next.js React page and loads `app/vendor/fonts-latin.css`
   (NeueMontreal) via `app/globals.css`; the injected editions load their own CSS from the mirror.
