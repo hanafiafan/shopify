@@ -89,5 +89,5 @@ its player builds at runtime — not interceptable at build time).
   crawled, left to degrade gracefully) surface on some editions — content still renders. Note:
   *fetching* those missing chunks makes things worse, not better — once loaded they run and hit
   the network guard, throwing into the error boundary; leaving them to 404 is deliberate.
-- `scripts/extract-page.mjs` + `app/vendor/*` are from an earlier static-inject approach the
-  live-standalone pivot superseded; kept for reference.
+- The landing page (`/`) is a normal Next.js React page and loads `app/vendor/fonts-latin.css`
+  (NeueMontreal) via `app/globals.css`; the injected editions load their own CSS from the mirror.

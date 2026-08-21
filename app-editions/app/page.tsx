@@ -20,6 +20,7 @@ const EDITIONS: Ed[] = [
 ];
 
 const css = `
+.hl-root *{box-sizing:border-box}
 .hl-root{min-height:100vh;background:#0a0a0a;color:#fff;font-family:NeueMontreal,system-ui,sans-serif;padding:clamp(24px,5vw,64px);display:flex;flex-direction:column;gap:clamp(40px,7vw,90px)}
 .hl-top{display:flex;align-items:center;gap:14px}
 .hl-top svg{width:30px;height:auto;fill:#fff}

@@ -1,3 +1,2 @@
-/* Shopify's compiled design system (used verbatim so ported markup renders faithfully) */
+/* Fonts for the app-router pages (the landing). The injected editions load their own CSS. */
 @import "./vendor/fonts-latin.css";
-@import "./vendor/tailwind-shopify.css";
